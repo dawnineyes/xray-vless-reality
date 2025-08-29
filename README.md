@@ -159,9 +159,6 @@ bash <(curl -L git.io/warp.sh) 4
 bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove --purge
 ```
 
-# 私货
-对于喜欢V2rayN PAC模式的朋友，欢迎使用支持Reality的 [v2rayN-3.29-VLESS](https://github.com/crazypeace/v2rayN-3.29-VLESS)
-![image](https://github.com/crazypeace/xray-vless-reality/assets/665889/c45c11a1-e326-4c70-9c55-8ec45608c472)
 
 # 脚本支持带参数运行
 ```
