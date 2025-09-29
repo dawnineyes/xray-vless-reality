@@ -26,7 +26,7 @@ pause() {
 echo
 echo -e "$yellow此脚本仅兼容于Debian 10+系统. 如果你的系统不符合,请Ctrl+C退出脚本$none"
 echo -e "可以去 ${cyan}https://github.com/crazypeace/xray-vless-reality${none} 查看脚本整体思路和关键命令, 以便针对你自己的系统做出调整."
-echo -e "有问题加群 ${cyan}https://t.me/+ISuvkzFGZPBhMzE1${none}"
+echo -e "有问题加群 ${cyan}https://t.me/+lvvrcMerTKk0NWJl${none}"
 echo -e "本脚本支持带参数执行, 省略交互过程, 详见GitHub."
 echo "----------------------------------------------------------------"
 
@@ -121,15 +121,18 @@ bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release
 
 # 如果脚本带参数执行的, 要在安装了xray之后再生成默认私钥公钥shortID
 if [[ -n $uuid ]]; then
-  #私钥种子
-  private_key=$(echo -n ${uuid} | md5sum | head -c 32 | base64 -w 0 | tr '+/' '-_' | tr -d '=')
+  # 私钥种子
+  # x25519对私钥有一定要求, 不是任意随机的都满足要求, 所以下面这个字符串只能当作种子看待
+  reality_key_seed=$(echo -n ${uuid} | md5sum | head -c 32 | base64 -w 0 | tr '+/' '-_' | tr -d '=')
 
-  #生成私钥公钥
-  tmp_key=$(echo -n ${private_key} | xargs xray x25519 -i)
-  private_key=$(echo ${tmp_key} | awk '{print $3}')
-  public_key=$(echo ${tmp_key} | awk '{print $6}')
+  # 生成私钥公钥
+  # xray x25519 如果接收一个合法的私钥, 会生成对应的公钥. 如果接收一个非法的私钥, 会先"修正"为合法的私钥. 这个"修正"的过程, 会修改其中的一些字节
+  # https://github.dev/XTLS/Xray-core/blob/6830089d3c42483512842369c908f9de75da2eaa/main/commands/all/curve25519.go#L36
+  tmp_key=$(echo -n ${reality_key_seed} | xargs xray x25519 -i)
+  private_key=$(echo ${tmp_key} | awk '{print $2}')
+  public_key=$(echo ${tmp_key} | awk '{print $4}')
 
-  #ShortID
+  # ShortID
   shortid=$(echo -n ${uuid} | sha1sum | head -c 16)
   
   echo
@@ -226,12 +229,16 @@ fi
 # x25519公私钥
 if [[ -z $private_key ]]; then
   # 私钥种子
-  private_key=$(echo -n ${uuid} | md5sum | head -c 32 | base64 -w 0 | tr '+/' '-_' | tr -d '=')
+  # x25519对私钥有一定要求, 不是任意随机的都满足要求, 所以下面这个字符串只能当作种子看待
+  reality_key_seed=$(echo -n ${uuid} | md5sum | head -c 32 | base64 -w 0 | tr '+/' '-_' | tr -d '=')
 
-  tmp_key=$(echo -n ${private_key} | xargs xray x25519 -i)
-  default_private_key=$(echo ${tmp_key} | awk '{print $3}')
-  default_public_key=$(echo ${tmp_key} | awk '{print $6}')
-
+  # 生成私钥公钥
+  # xray x25519 如果接收一个合法的私钥, 会生成对应的公钥. 如果接收一个非法的私钥, 会先"修正"为合法的私钥. 这个"修正"的过程, 会修改其中的一些字节
+  # https://github.dev/XTLS/Xray-core/blob/6830089d3c42483512842369c908f9de75da2eaa/main/commands/all/curve25519.go#L36
+  tmp_key=$(echo -n ${reality_key_seed} | xargs xray x25519 -i)
+  default_private_key=$(echo ${tmp_key} | awk '{print $2}')
+  default_public_key=$(echo ${tmp_key} | awk '{print $4}')
+  
   echo -e "请输入 "$yellow"x25519 Private Key"$none" x25519私钥 :"
   read -p "$(echo -e "(默认私钥 Private Key: ${cyan}${default_private_key}$none):")" private_key
   if [[ -z "$private_key" ]]; then 
@@ -239,8 +246,8 @@ if [[ -z $private_key ]]; then
     public_key=$default_public_key
   else
     tmp_key=$(echo -n ${private_key} | xargs xray x25519 -i)
-    private_key=$(echo ${tmp_key} | awk '{print $3}')
-    public_key=$(echo ${tmp_key} | awk '{print $6}')
+    private_key=$(echo ${tmp_key} | awk '{print $2}')
+    public_key=$(echo ${tmp_key} | awk '{print $4}')
   fi
 
   echo
@@ -482,7 +489,7 @@ if [[ $netstack == "6" ]]; then
     pause
 
     # 安装 WARP IPv4
-    bash <(https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) 4
+    bash <(curl -L https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) 4
 
     # 重启 Xray
     echo
@@ -495,14 +502,14 @@ elif  [[ $netstack == "4" ]]; then
     echo
     echo -e "$yellow这是一个 IPv4 小鸡，用 WARP 创建 IPv6 出站$none"
     echo -e "有些热门小鸡用原生的IPv4出站访问Google需要通过人机验证, 可以通过修改config.json指定google流量走WARP的IPv6出站解决"
-    echo -e "群组: ${cyan} https://t.me/+ISuvkzFGZPBhMzE1 ${none}"
+    echo -e "群组: ${cyan} https://t.me/+lvvrcMerTKk0NWJl ${none}"
     echo -e "教程: ${cyan} https://zelikk.blogspot.com/2022/03/racknerd-v2ray-cloudflare-warp--ipv6-google-domainstrategy-outboundtag-routing.html ${none}"
     echo -e "视频: ${cyan} https://youtu.be/Yvvm4IlouEk ${none}"    
     echo "----------------------------------------------------------------"
     pause
 
     # 安装 WARP IPv6
-    bash <(https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) 6
+    bash <(curl -L https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh) 6
 
     # 重启 Xray
     echo
